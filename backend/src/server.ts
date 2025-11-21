@@ -56,7 +56,7 @@ const startServer = async () => {
                     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax', // IMPORTANT: Add this for cross-domain cookies
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // IMPORTANT: Add this for cross-domain cookies
                 },
             })
         );
