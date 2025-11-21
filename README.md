@@ -176,4 +176,4 @@ FRONTEND_URL=http://localhost:5173
 
 ## License
 
-MIT
+Apache 2.0
