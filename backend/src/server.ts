@@ -3,7 +3,7 @@ import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import MongoStore from 'connect-mongo'; // NEW: Import MongoStore
+import MongoStore from 'connect-mongo';
 import { connectDatabase } from './config/database';
 import { configurePassport } from './config/passport';
 
@@ -31,50 +31,53 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration - UPDATED TO USE MONGOSTORE
-app.use(
-    session({
-        secret: process.env.SESSION_SECRET || 'supereddit_secret',
-        resave: false,
-        saveUninitialized: false,
-        // CRITICAL CHANGE: Use MongoStore for persistent session storage
-        store: MongoStore.create({
-            mongoUrl: process.env.MONGODB_URI, // <--- IMPORTANT: Verify this ENV variable name
-            collectionName: 'sessions', // Collection name in your DB for sessions
-            ttl: 1000 * 60 * 60 * 24 * 7, // 1 week TTL, matching cookie maxAge
-        }),
-        cookie: {
-            maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        },
-    })
-);
-
-// Passport initialization
-app.use(passport.initialize());
-app.use(passport.session());
-configurePassport();
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/subreddits', subredditRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api', commentRoutes);
-app.use('/api', searchRoutes);
-app.use('/api/reddit', redditRoutes);
-app.use('/api/users', userRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Supereddit API is running' });
-});
-
 // Start server
 const startServer = async () => {
     try {
         // Connect to database
         await connectDatabase();
+
+        // Create MongoStore BEFORE setting up session middleware
+        const mongoStore = await MongoStore.create({
+            mongoUrl: process.env.MONGODB_URI,
+            collectionName: 'sessions',
+            ttl: 1000 * 60 * 60 * 24 * 7, // 1 week
+        });
+
+        // Session configuration - NOW WITH INITIALIZED STORE
+        app.use(
+            session({
+                secret: process.env.SESSION_SECRET || 'supereddit_secret',
+                resave: false,
+                saveUninitialized: false,
+                store: mongoStore,
+                cookie: {
+                    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax', // IMPORTANT: Add this for cross-domain cookies
+                },
+            })
+        );
+
+        // Passport initialization
+        app.use(passport.initialize());
+        app.use(passport.session());
+        configurePassport();
+
+        // Routes
+        app.use('/api/auth', authRoutes);
+        app.use('/api/subreddits', subredditRoutes);
+        app.use('/api/posts', postRoutes);
+        app.use('/api', commentRoutes);
+        app.use('/api', searchRoutes);
+        app.use('/api/reddit', redditRoutes);
+        app.use('/api/users', userRoutes);
+
+        // Health check
+        app.get('/api/health', (req, res) => {
+            res.json({ status: 'ok', message: 'Supereddit API is running' });
+        });
 
         // Start listening
         app.listen(PORT, () => {
