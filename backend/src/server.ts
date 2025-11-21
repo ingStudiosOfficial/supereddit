@@ -3,6 +3,7 @@ import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import MongoStore from 'connect-mongo'; // NEW: Import MongoStore
 import { connectDatabase } from './config/database';
 import { configurePassport } from './config/passport';
 
@@ -30,12 +31,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// Session configuration - UPDATED TO USE MONGOSTORE
 app.use(
     session({
         secret: process.env.SESSION_SECRET || 'supereddit_secret',
         resave: false,
         saveUninitialized: false,
+        // CRITICAL CHANGE: Use MongoStore for persistent session storage
+        store: MongoStore.create({
+            mongoUrl: process.env.MONGODB_URI, // <--- IMPORTANT: Verify this ENV variable name
+            collectionName: 'sessions', // Collection name in your DB for sessions
+            ttl: 1000 * 60 * 60 * 24 * 7, // 1 week TTL, matching cookie maxAge
+        }),
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
             httpOnly: true,
