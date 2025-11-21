@@ -6,6 +6,7 @@ interface User {
     username: string;
     avatar: string;
     discriminator: string;
+    discordId: string;
 }
 
 interface AuthState {

@@ -158,10 +158,12 @@ const fetchPost = async () => {
     loading.value = true;
     const response = await apiClient.get(`/posts/${route.params.id}`);
     post.value = response.data.post;
-    votes.value = post.value.votes;
+    if (post.value) {
+      votes.value = post.value.votes;
+    }
     
     // Check if user has voted
-    if (authState.isAuthenticated && post.value.voters) {
+    if (authState.isAuthenticated && post.value?.voters) {
       const existingVote = post.value.voters.find(
         (v) => v.user === authState.user?._id
       );

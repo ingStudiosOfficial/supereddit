@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '../api/client';
 import { useAuth } from '../stores/auth';
