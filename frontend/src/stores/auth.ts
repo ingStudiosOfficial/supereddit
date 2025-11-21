@@ -43,7 +43,7 @@ export const useAuth = () => {
     };
 
     const login = () => {
-        window.location.href = '/api/auth/discord';
+        window.location.href = `${import.meta.env.VITE_API_URL}/auth/discord`;
     };
 
     const logout = async () => {
